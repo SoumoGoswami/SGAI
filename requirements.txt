@@ -1,0 +1,12 @@
+
+aiohttp
+discord-py
+duckduckgo-search
+flask
+gtts
+langdetect
+openai
+python-dotenv
+pyttsx3
+PyYAML
+requests
