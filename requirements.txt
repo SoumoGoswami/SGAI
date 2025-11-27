@@ -3,6 +3,7 @@ aiohttp
 discord-py
 duckduckgo-search
 flask
+gunicorn
 gtts
 langdetect
 openai

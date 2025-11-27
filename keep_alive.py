@@ -94,8 +94,8 @@ def home():
     return render_template_string(HTML_PAGE)
 
 def run():
-    app.run(host='0.0.0.0', port=10000)
+    app.run(host='0.0.0.0', port=10000, debug=False)
 
 def keep_alive():
-    thread = Thread(target=run)
+    thread = Thread(target=run, daemon=True)
     thread.start()
