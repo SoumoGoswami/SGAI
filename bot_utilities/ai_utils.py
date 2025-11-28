@@ -20,12 +20,19 @@ load_dotenv()
 current_language = load_current_language()
 internet_access = config['INTERNET_ACCESS']
 
+api_key = os.environ.get("API_KEY") or os.environ.get("GROQ_API_KEY")
+if not api_key:
+    print("WARNING: No API_KEY or GROQ_API_KEY environment variable found. The bot will not be able to generate responses.")
+
 client = AsyncOpenAI(
     base_url=config['API_BASE_URL'],
-    api_key=os.environ.get("API_KEY"),
+    api_key=api_key,
 )
 
 async def generate_response(instructions, history):
+    if not api_key:
+        raise ValueError("API_KEY is not configured. Please set API_KEY or GROQ_API_KEY environment variable.")
+    
     messages = [
             {"role": "system", "name": "instructions", "content": instructions},
             *history,
@@ -102,8 +109,12 @@ def clean_function_calls_from_response(text):
     
     # Remove patterns like <function(searchtool){"query": "..."}>
     text = re.sub(r'<function\([^)]+\)\{[^}]*\}>', '', text)
+    # Remove patterns like <function/searchtool {"query": "..."}>
+    text = re.sub(r'<function/[^>]+>', '', text)
     # Remove patterns like <function>...</function>
     text = re.sub(r'<function>.*?</function>', '', text, flags=re.DOTALL)
+    # Remove any remaining function call markers
+    text = re.sub(r'<function[^>]*>', '', text)
     # Clean up extra whitespace
     text = text.strip()
     return text
