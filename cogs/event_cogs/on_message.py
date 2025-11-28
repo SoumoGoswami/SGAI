@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+import time
 
 from bot_utilities.response_utils import split_response
 from bot_utilities.ai_utils import generate_response, text_to_speech
@@ -12,6 +13,7 @@ class OnMessage(commands.Cog):
         self.bot = bot
         self.active_channels = load_active_channels
         self.instructions = instructions
+        self.processed_messages = {}  # Track recently processed messages
 
     async def process_message(self, message):
         active_channels = self.active_channels()
@@ -73,6 +75,21 @@ class OnMessage(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
+        # Prevent duplicate processing of the same message
+        current_time = time.time()
+        if message.id in self.processed_messages:
+            # Skip if processed within the last 2 seconds
+            if current_time - self.processed_messages[message.id] < 2:
+                return
+        
+        # Mark this message as processed
+        self.processed_messages[message.id] = current_time
+        
+        # Clean up old entries to prevent memory leak
+        if len(self.processed_messages) > 100:
+            oldest_id = min(self.processed_messages, key=self.processed_messages.get)
+            del self.processed_messages[oldest_id]
+        
         if message.author == self.bot.user and message.reference:
             replied_messages[message.reference.message_id] = message
             if len(replied_messages) > 5:
