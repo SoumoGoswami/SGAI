@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 import time
+import asyncio
 
 from bot_utilities.response_utils import split_response
 from bot_utilities.ai_utils import generate_response, text_to_speech
@@ -54,11 +55,21 @@ class OnMessage(commands.Cog):
                 pass
 
     async def generate_response(self, instructions, history):
-        try:
-            return await generate_response(instructions=instructions, history=history)
-        except Exception as e:
-            print(f"Error generating response: {e}")
-            return "Sorry, I'm having trouble processing that request right now. Please try again in a moment."
+        max_retries = 3
+        retry_delay = 2  # seconds between retries
+        
+        for attempt in range(1, max_retries + 1):
+            try:
+                return await generate_response(instructions=instructions, history=history)
+            except Exception as e:
+                print(f"Attempt {attempt}/{max_retries} - Error generating response: {e}")
+                
+                if attempt < max_retries:
+                    print(f"Retrying in {retry_delay} seconds...")
+                    await asyncio.sleep(retry_delay)
+                else:
+                    print(f"Failed after {max_retries} attempts")
+                    return "Sorry, I'm having trouble processing that request right now. I've tried a few times but keep running into issues. Please try again in a moment or check if there are any problems with the API."
 
     async def send_response(self, message, response):
         bytes_obj = await text_to_speech(response)
