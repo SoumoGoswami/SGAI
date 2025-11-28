@@ -5,6 +5,7 @@ import os
 import random
 import json
 import asyncio
+import re
 from functools import partial
 from langdetect import detect
 from gtts import gTTS
@@ -83,11 +84,32 @@ async def generate_response(instructions, history):
             model=config['MODEL_ID'],
             messages=messages
         ) 
-        return second_response.choices[0].message.content
-    return response_message.content
+        final_response = second_response.choices[0].message.content
+        # Filter out any raw function call text that might appear in response
+        final_response = clean_function_calls_from_response(final_response)
+        return final_response
+    
+    response_content = response_message.content
+    # Filter out any raw function call text that might appear in response
+    response_content = clean_function_calls_from_response(response_content)
+    return response_content
+
+
+def clean_function_calls_from_response(text):
+    """Remove raw function call text from the response"""
+    if not text:
+        return text
+    
+    # Remove patterns like <function(searchtool){"query": "..."}>
+    text = re.sub(r'<function\([^)]+\)\{[^}]*\}>', '', text)
+    # Remove patterns like <function>...</function>
+    text = re.sub(r'<function>.*?</function>', '', text, flags=re.DOTALL)
+    # Clean up extra whitespace
+    text = text.strip()
+    return text
 
 async def duckduckgotool(query) -> str:
-    if config['INTERNET_ACCESS']:
+    if not config['INTERNET_ACCESS']:
         return "internet access has been disabled by user"
     blob = ''
     try:
