@@ -38,65 +38,16 @@ async def generate_response(instructions, history):
             *history,
         ]
 
-    tools = [
-        {
-            "type": "function",
-            "function": {
-                "name": "searchtool",
-                "description": "Searches the internet.",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "query": {
-                            "type": "string",
-                            "description": "The query for search engine",
-                        }
-                    },
-                    "required": ["query"],
-                },
-            },
-        }
-    ]
+    # Disable tools for now as they're causing issues with the model
+    # If you want to enable web search, uncomment the tools section below
     response = await client.chat.completions.create(
         model=config['MODEL_ID'],
-        messages=messages,        
-        tools=tools,
-        tool_choice="auto",
+        messages=messages,
+        temperature=0.7,
+        max_tokens=2048,
     )
-    response_message = response.choices[0].message
-    tool_calls = response_message.tool_calls
-
-    if tool_calls:
-        available_functions = {
-            "searchtool": duckduckgotool,
-        }
-        messages.append(response_message)
-
-        for tool_call in tool_calls:
-            function_name = tool_call.function.name
-            function_to_call = available_functions[function_name]
-            function_args = json.loads(tool_call.function.arguments)
-            function_response = await function_to_call(
-                query=function_args.get("query")
-            )
-            messages.append(
-                {
-                    "tool_call_id": tool_call.id,
-                    "role": "tool",
-                    "name": function_name,
-                    "content": function_response,
-                }
-            )
-        second_response = await client.chat.completions.create(
-            model=config['MODEL_ID'],
-            messages=messages
-        ) 
-        final_response = second_response.choices[0].message.content
-        # Filter out any raw function call text that might appear in response
-        final_response = clean_function_calls_from_response(final_response)
-        return final_response
     
-    response_content = response_message.content
+    response_content = response.choices[0].message.content
     # Filter out any raw function call text that might appear in response
     response_content = clean_function_calls_from_response(response_content)
     return response_content
