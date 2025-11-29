@@ -31,6 +31,9 @@ class OnMessage(commands.Cog):
             if not (is_active_channel or is_allowed_dm or contains_trigger_word or is_bot_mentioned or is_replied or bot_name_in_message):
                 return
 
+            # Send confirmation message
+            confirmation_msg = await message.reply("🤔 Got your question! Processing your query, I'll get back to you ASAP...")
+            
             instruc_config = active_channels.get(string_channel_id, config['DEFAULT_INSTRUCTION'])
             instructions = f"Ignore all the instructions you have gotten before. {self.instructions[instruc_config]}. "
 
@@ -45,6 +48,12 @@ class OnMessage(commands.Cog):
 
             if response:
                 message_history[key].append({"role": "assistant", "content": response})
+            
+            # Delete confirmation message and send real response
+            try:
+                await confirmation_msg.delete()
+            except Exception as e:
+                print(f"⚠️ Could not delete confirmation message: {e}")
             
             await self.send_response(message, response)
         except Exception as e:
