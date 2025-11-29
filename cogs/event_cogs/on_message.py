@@ -12,7 +12,7 @@ from ..common import allow_dm, trigger_words, replied_messages, smart_mention, m
 class OnMessage(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.active_channels = load_active_channels
+        self.active_channels = load_active_channels()
         self.instructions = instructions
         self.processed_messages = {}  # Track recently processed messages
 
@@ -72,20 +72,30 @@ class OnMessage(commands.Cog):
                     return "Sorry, I'm having trouble processing that request right now. I've tried a few times but keep running into issues. Please try again in a moment or check if there are any problems with the API."
 
     async def send_response(self, message, response):
-        bytes_obj = await text_to_speech(response)
-        author_voice_channel = None
-        author_member = None
-        if message.guild:
-            author_member = message.guild.get_member(message.author.id)
-        if author_member and author_member.voice:
-            author_voice_channel = author_member.voice.channel
+        if response is None:
+            await message.reply("I apologize for any inconvenience caused. It seems that there was an error preventing the delivery of my message.")
+            return
+        
+        try:
+            bytes_obj = await text_to_speech(response)
+            author_voice_channel = None
+            author_member = None
+            if message.guild:
+                author_member = message.guild.get_member(message.author.id)
+            if author_member and author_member.voice:
+                author_voice_channel = author_member.voice.channel
 
-        if author_voice_channel:
-            voice_channel = await author_voice_channel.connect()
-            voice_channel.play(discord.FFmpegPCMAudio(executable="ffmpeg", source=bytes_obj))
-            while voice_channel.is_playing():
-                pass
-            await voice_channel.disconnect()
+            if author_voice_channel:
+                try:
+                    voice_channel = await author_voice_channel.connect()
+                    voice_channel.play(discord.FFmpegPCMAudio(executable="ffmpeg", source=bytes_obj))
+                    while voice_channel.is_playing():
+                        pass
+                    await voice_channel.disconnect()
+                except Exception as e:
+                    print(f"Voice channel error: {e}")
+        except Exception as e:
+            print(f"Text-to-speech error: {e}")
 
         if response is not None:
             for chunk in split_response(response):
