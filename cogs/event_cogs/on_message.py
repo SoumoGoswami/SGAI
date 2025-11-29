@@ -43,13 +43,13 @@ class OnMessage(commands.Cog):
             message_history[key] = message_history[key][-MAX_HISTORY:]
             message_history[key].append({"role": "user", "content": message.content})
 
-            async with message.channel.typing():
-                response = await self.generate_response(instructions, message_history[key])
+            # Generate response (confirmation message stays visible during this)
+            response = await self.generate_response(instructions, message_history[key])
 
             if response:
                 message_history[key].append({"role": "assistant", "content": response})
             
-            # Delete confirmation message and send real response
+            # Delete confirmation message right before sending the real answer
             try:
                 await confirmation_msg.delete()
             except Exception as e:
