@@ -18,7 +18,7 @@ class OnMessage(commands.Cog):
 
     async def process_message(self, message):
         try:
-            active_channels = self.active_channels()
+            active_channels = self.active_channels if isinstance(self.active_channels, dict) else {}
             string_channel_id = f"{message.channel.id}"
             is_replied = (message.reference and message.reference.resolved.author == self.bot.user) and smart_mention
             is_dm_channel = isinstance(message.channel, discord.DMChannel)
@@ -48,11 +48,13 @@ class OnMessage(commands.Cog):
             
             await self.send_response(message, response)
         except Exception as e:
-            print(f"Error processing message: {e}")
+            import traceback
+            print(f"❌ Error processing message: {e}")
+            print(traceback.format_exc())
             try:
                 await message.reply("Sorry, I encountered an error while processing your message. Please try again.")
-            except:
-                pass
+            except Exception as reply_error:
+                print(f"Failed to send error message: {reply_error}")
 
     async def generate_response(self, instructions, history):
         max_retries = 3
@@ -76,6 +78,7 @@ class OnMessage(commands.Cog):
             await message.reply("I apologize for any inconvenience caused. It seems that there was an error preventing the delivery of my message.")
             return
         
+        # Try text-to-speech but don't fail if it errors
         try:
             bytes_obj = await text_to_speech(response)
             author_voice_channel = None
@@ -93,18 +96,20 @@ class OnMessage(commands.Cog):
                         pass
                     await voice_channel.disconnect()
                 except Exception as e:
-                    print(f"Voice channel error: {e}")
+                    print(f"⚠️ Voice channel error: {e}")
         except Exception as e:
-            print(f"Text-to-speech error: {e}")
+            print(f"⚠️ Text-to-speech error: {e}")
 
-        if response is not None:
+        # Always send the text response
+        try:
             for chunk in split_response(response):
-                try:
-                    await message.reply(chunk, allowed_mentions=discord.AllowedMentions.none(), suppress_embeds=True)
-                except Exception:
-                    await message.channel.send("I apologize for any inconvenience caused. It seems that there was an error preventing the delivery of my message. Additionally, it appears that the message I was replying to has been deleted, which could be the reason for the issue. If you have any further questions or if there's anything else I can assist you with, please let me know and I'll be happy to help.")
-        else:
-            await message.reply("I apologize for any inconvenience caused. It seems that there was an error preventing the delivery of my message.")
+                await message.reply(chunk, allowed_mentions=discord.AllowedMentions.none(), suppress_embeds=True)
+        except Exception as e:
+            print(f"❌ Failed to send response chunk: {e}")
+            try:
+                await message.channel.send("I apologize for any inconvenience caused. It seems that there was an error preventing the delivery of my message. Additionally, it appears that the message I was replying to has been deleted, which could be the reason for the issue. If you have any further questions or if there's anything else I can assist you with, please let me know and I'll be happy to help.")
+            except Exception as fallback_error:
+                print(f"❌ Fallback send also failed: {fallback_error}")
 
     @commands.Cog.listener()
     async def on_message(self, message):
