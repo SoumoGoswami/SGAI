@@ -43,16 +43,19 @@ class OnMessage(commands.Cog):
             message_history[key] = message_history[key][-MAX_HISTORY:]
             message_history[key].append({"role": "user", "content": message.content})
 
-            # Generate response (confirmation message stays visible during this)
+            # Generate response and measure time taken
+            start_time = time.time()
             response = await self.generate_response(instructions, message_history[key])
+            response_time = time.time() - start_time
 
             if response:
                 message_history[key].append({"role": "assistant", "content": response})
             
-            # Ensure confirmation message is visible for at least 2 seconds
-            await asyncio.sleep(2)
+            # Only keep confirmation message if response was slow (>1 second) or response is big (>500 chars)
+            response_size = len(response) if response else 0
+            should_keep_confirmation = response_time > 1 or response_size > 500
             
-            # Delete confirmation message right before sending the real answer
+            # Delete confirmation message unless it should be kept
             try:
                 await confirmation_msg.delete()
             except Exception as e:
