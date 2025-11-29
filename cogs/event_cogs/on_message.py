@@ -49,6 +49,9 @@ class OnMessage(commands.Cog):
             if response:
                 message_history[key].append({"role": "assistant", "content": response})
             
+            # Ensure confirmation message is visible for at least 2 seconds
+            await asyncio.sleep(2)
+            
             # Delete confirmation message right before sending the real answer
             try:
                 await confirmation_msg.delete()
