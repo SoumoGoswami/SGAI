@@ -54,23 +54,15 @@ class OnMessage(commands.Cog):
             response_size = len(response) if response else 0
             should_show_confirmation = response_time > 1 or response_size > 500
             
-            # If response was slow/big, show confirmation that only the user can see (auto-delete after 8 seconds)
+            # If response was slow/big, show confirmation that only the user can see (auto-delete after 10 seconds)
             if should_show_confirmation:
                 try:
-                    confirmation_msg = await message.reply(
-                        f"{message.author.mention} 🤔 Got your question! Processing your query, I'll get back to you ASAP...",
-                        delete_after=8
+                    await message.reply(
+                        f"{message.author.mention} 🤔 Got your question! Here's the answer...",
+                        delete_after=10
                     )
                 except Exception as e:
                     print(f"⚠️ Could not send confirmation: {e}")
-                    confirmation_msg = None
-            
-            # If we sent a confirmation, delete it before sending the real answer
-            if confirmation_msg:
-                try:
-                    await confirmation_msg.delete()
-                except Exception as e:
-                    print(f"⚠️ Could not delete confirmation message: {e}")
             
             await self.send_response(message, response)
         except Exception as e:
