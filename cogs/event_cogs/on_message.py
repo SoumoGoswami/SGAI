@@ -31,8 +31,12 @@ class OnMessage(commands.Cog):
             if not (is_active_channel or is_allowed_dm or contains_trigger_word or is_bot_mentioned or is_replied or bot_name_in_message):
                 return
 
-            # Send confirmation message
-            confirmation_msg = await message.reply("🤔 Got your question! Processing your query, I'll get back to you ASAP...")
+            # Send private confirmation message to user (only they can see)
+            try:
+                confirmation_msg = await message.author.send("🤔 Got your question! Processing your query, I'll get back to you ASAP...")
+            except Exception as e:
+                print(f"⚠️ Could not send private confirmation: {e}")
+                confirmation_msg = None
             
             instruc_config = active_channels.get(string_channel_id, config['DEFAULT_INSTRUCTION'])
             instructions = f"Ignore all the instructions you have gotten before. {self.instructions[instruc_config]}. "
@@ -55,11 +59,12 @@ class OnMessage(commands.Cog):
             response_size = len(response) if response else 0
             should_keep_confirmation = response_time > 1 or response_size > 500
             
-            # Delete confirmation message unless it should be kept
-            try:
-                await confirmation_msg.delete()
-            except Exception as e:
-                print(f"⚠️ Could not delete confirmation message: {e}")
+            # Delete private confirmation message if it was sent
+            if confirmation_msg:
+                try:
+                    await confirmation_msg.delete()
+                except Exception as e:
+                    print(f"⚠️ Could not delete confirmation message: {e}")
             
             await self.send_response(message, response)
         except Exception as e:
