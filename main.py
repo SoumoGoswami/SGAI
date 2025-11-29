@@ -39,9 +39,23 @@ bot = AIBot(command_prefix=[], intents=discord.Intents.all(), help_command=None)
 
 TOKEN = os.getenv('DISCORD_TOKEN')
 
-if TOKEN is None:
-    print("\033[31mLooks like you haven't properly set up a Discord token environment variable in the `.env` file. (Secrets on replit)\033[0m")
-    print("\033[33mNote: If you don't have a Discord token environment variable, you will have to input it every time. \033[0m")
-    TOKEN = input("Please enter your Discord token: ")
+if TOKEN is None or TOKEN.strip() == "":
+    print("\033[31m❌ ERROR: DISCORD_TOKEN is not set!\033[0m")
+    print("\033[33mTo fix this:")
+    print("1. Click the 'Secrets' icon (lock icon) in Replit's left sidebar")
+    print("2. Add a new secret: Key='DISCORD_TOKEN', Value='<your_token>'")
+    print("3. Get your token from: https://discord.com/developers/applications\033[0m")
+    exit(1)
 
+# Also check for API key
+API_KEY = os.getenv('API_KEY') or os.getenv('GROQ_API_KEY')
+if API_KEY is None or API_KEY.strip() == "":
+    print("\033[31m❌ ERROR: API_KEY is not set!\033[0m")
+    print("\033[33mTo fix this:")
+    print("1. Click the 'Secrets' icon (lock icon) in Replit's left sidebar")
+    print("2. Add a new secret: Key='API_KEY', Value='<your_groq_api_key>'")
+    print("3. Get your key from: https://console.groq.com/keys\033[0m")
+    exit(1)
+
+print("\033[32m✓ All secrets configured. Starting bot...\033[0m")
 bot.run(TOKEN, reconnect=True)
