@@ -28,18 +28,27 @@ def load_current_language() -> dict:
 # Instructions loader
 def load_instructions() -> dict:
     instructions = {}
+    if not os.path.exists("instructions"):
+        print("⚠️ Warning: 'instructions' folder not found")
+        return instructions
     for file_name in os.listdir("instructions"):
         if file_name.endswith('.txt'):
             file_path = os.path.join("instructions", file_name)
-            with open(file_path, 'r', encoding='utf-8') as file:
-                file_content = file.read()
-            # Use the file name without extension as the variable name
-                variable_name = file_name.split('.')[0]
-                instructions[variable_name] = file_content
+            try:
+                with open(file_path, 'r', encoding='utf-8') as file:
+                    file_content = file.read()
+                    variable_name = file_name.split('.')[0]
+                    instructions[variable_name] = file_content
+            except Exception as e:
+                print(f"⚠️ Error loading instruction {file_name}: {e}")
     return instructions
 
 def load_active_channels() -> dict:
+    active_channels = {}
     if os.path.exists("channels.json"):
-        with open("channels.json", "r", encoding='utf-8') as f:
-            active_channels = json.load(f)
+        try:
+            with open("channels.json", "r", encoding='utf-8') as f:
+                active_channels = json.load(f)
+        except Exception as e:
+            print(f"⚠️ Error loading channels.json: {e}")
     return active_channels
